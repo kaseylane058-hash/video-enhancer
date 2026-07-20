@@ -2,6 +2,7 @@ import streamlit as st
 import cv2
 import numpy as np
 import tempfile
+import subprocess
 import os
 
 st.set_page_config(page_title="Ultra HD AI Video Tool", layout="centered", page_icon="🎬")
@@ -54,10 +55,11 @@ if uploaded_file is not None:
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
 
-            # Using .mkv suffix for better file manager recognition
-            output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mkv').name
-            fourcc = cv2.VideoWriter_fourcc(*'avc1')
-            out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+            temp_output = tempfile.NamedTemporaryFile(delete=False, suffix='.avi').name
+            final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+            
+            fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+            out = cv2.VideoWriter(temp_output, fourcc, fps, (width, height))
 
             frame_count = 0
             while cap.isOpened():
@@ -72,10 +74,13 @@ if uploaded_file is not None:
             cap.release()
             out.release()
 
+            # Convert to Mobile Friendly MP4 using ffmpeg
+            subprocess.run(['ffmpeg', '-y', '-i', temp_output, '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', final_output])
+
             st.success("🎉 Video Repair Completed!")
-            st.video(output_path)
-            with open(output_path, "rb") as file:
-                st.download_button("⬇️ Download Repaired Video", data=file, file_name="repaired_video.mkv", mime="video/mkv")
+            st.video(final_output)
+            with open(final_output, "rb") as file:
+                st.download_button("⬇️ Download Repaired Video", data=file, file_name="repaired_video.mp4", mime="video/mp4")
 
     # Mode 2: Ultra HD Sharpening
     elif "2. Ultra HD Sharpening" in mode_choice:
@@ -92,10 +97,11 @@ if uploaded_file is not None:
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
 
-            # Using .mkv suffix for better file manager recognition
-            output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mkv').name
-            fourcc = cv2.VideoWriter_fourcc(*'avc1')
-            out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+            temp_output = tempfile.NamedTemporaryFile(delete=False, suffix='.avi').name
+            final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+            
+            fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+            out = cv2.VideoWriter(temp_output, fourcc, fps, (width, height))
 
             frame_count = 0
             while cap.isOpened():
@@ -117,10 +123,13 @@ if uploaded_file is not None:
             cap.release()
             out.release()
 
+            # Convert to Mobile Friendly MP4 using ffmpeg
+            subprocess.run(['ffmpeg', '-y', '-i', temp_output, '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', final_output])
+
             st.success("🎉 Ultra HD Sharpening Completed!")
-            st.video(output_path)
-            with open(output_path, "rb") as file:
-                st.download_button("⬇️ Download Ultra HD Video", data=file, file_name="ultrahd_video.mkv", mime="video/mkv")
+            st.video(final_output)
+            with open(final_output, "rb") as file:
+                st.download_button("⬇️ Download Ultra HD Video", data=file, file_name="ultrahd_video.mp4", mime="video/mp4")
 
     # Mode 3: FPS Boost
     elif "3. FPS Boost" in mode_choice:
@@ -136,10 +145,11 @@ if uploaded_file is not None:
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
 
-            # Using .mkv suffix for better file manager recognition
-            output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mkv').name
-            fourcc = cv2.VideoWriter_fourcc(*'avc1')
-            out = cv2.VideoWriter(output_path, fourcc, target_fps, (width, height))
+            temp_output = tempfile.NamedTemporaryFile(delete=False, suffix='.avi').name
+            final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+            
+            fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+            out = cv2.VideoWriter(temp_output, fourcc, target_fps, (width, height))
 
             frame_count = 0
             while cap.isOpened():
@@ -153,10 +163,13 @@ if uploaded_file is not None:
             cap.release()
             out.release()
 
+            # Convert to Mobile Friendly MP4 using ffmpeg
+            subprocess.run(['ffmpeg', '-y', '-i', temp_output, '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', final_output])
+
             st.success("🎉 FPS Conversion Completed!")
-            st.video(output_path)
-            with open(output_path, "rb") as file:
-                st.download_button("⬇️ Download Smooth Video", data=file, file_name="smooth_fps_video.mkv", mime="video/mkv")
+            st.video(final_output)
+            with open(final_output, "rb") as file:
+                st.download_button("⬇️ Download Smooth Video", data=file, file_name="smooth_fps_video.mp4", mime="video/mp4")
 else:
     st.info("👆 Please upload a video file (MP4, MOV, AVI) to start.")
             
