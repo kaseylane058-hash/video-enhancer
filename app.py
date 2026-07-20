@@ -5,7 +5,8 @@ import tempfile
 import subprocess
 import os
 
-st.set_page_config(page_title="Ultra HD AI Video Tool", layout="centered", page_icon="🎬")
+st.set_page_config(page_title="Mjrsweb", layout="centered", page_icon="🎬")
+
 
 st.title("🎬 AI Video Repair, Enhancer & FPS Tool")
 
