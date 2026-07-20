@@ -4,100 +4,149 @@ import numpy as np
 import tempfile
 import os
 
-st.set_page_config(page_title="Ultra HD Gaming Enhancer", layout="centered", page_icon="🎬")
+st.set_page_config(page_title="Ultra HD AI Video Tool", layout="centered", page_icon="🎬")
 
-st.title("🎬 Gaming Video Ultra HD Sharpening Tool")
-st.write("Select a mode below to process your video:")
+st.title("🎬 AI Video Repair, Enhancer & FPS Tool")
+st.write("Step 1: Choose the action you want to perform:")
 
-uploaded_file = st.file_uploader("Upload Video File (MP4, MOV, AVI)", type=["mp4", "mov", "avi"])
+# Step 1: Select Action First
+mode_choice = st.radio(
+    "Select an option based on your needs:",
+    (
+        "🛠️ 1. AI Video Repair (Remove Noise & Grain)",
+        "🔎 2. Ultra HD Sharpening (Remove Blur & Enhance Details)",
+        "⚡ 3. FPS Boost (Make Video Smoother)"
+    ),
+    index=1
+)
+
+st.write("---")
+st.subheader("Step 2: Upload Your Video File")
+
+uploaded_file = st.file_uploader("Select Video File (MP4, MOV, AVI)", type=["mp4", "mov", "avi"])
 
 if uploaded_file is not None:
     tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
     tfile.write(uploaded_file.read())
     video_path = tfile.name
 
-    # Create Tabs for 3 Separate Features
-    tab1, tab2, tab3 = st.tabs(["🛠️ 1. AI Video Repair", "🔎 2. Ultra HD Sharpening", "⚡ 3. FPS Boost"])
+    st.write("---")
+    st.subheader("Step 3: Settings & Processing")
 
-    mode = None
-    
-    with tab1:
-        st.subheader("🛠️ AI Video Repair (Denoise & Grain Removal)")
-        st.caption("Remove noise, grain, and pixelation artifacts.")
-        denoise_strength = st.slider("Denoise Strength", 1, 20, 5, key="repair_denoise")
-        if st.button("Start Repairing Video", type="primary"):
-            mode = "repair"
-
-    with tab2:
-        st.subheader("🔎 Ultra Gaming HD Clarity & Edge Sharpening")
-        st.caption("Enhances fine details, textures, and character edges for a crisp 4K gaming look.")
-        sharpness_boost = st.slider("Edge & Detail Intensity", 1.0, 3.5, 2.2, key="crisp_sharpness")
-        if st.button("🚀 Apply Ultra HD Sharpening", type="primary"):
-            mode = "enhance"
-
-    with tab3:
-        st.subheader("⚡ Frame Rate & Smoothness (FPS)")
-        st.caption("Boost video frame rate (FPS) for ultra-smooth gameplay.")
-        target_fps = st.select_slider("Target Frame Rate (FPS)", options=[24, 30, 60, 120], value=60, key="fps_target")
-        if st.button("Start FPS Conversion", type="primary"):
-            mode = "fps"
-
-    # Processing Logic
-    if mode is not None:
-        st.write("---")
-        st.write("⏳ Video Processing Started...")
-        progress_bar = st.progress(0)
+    # Mode 1: Repair
+    if "1. AI Video Repair" in mode_choice:
+        st.info("🛠️ **AI Video Repair Active:** Removes noise, grain, and pixelation artifacts.")
+        denoise_strength = st.slider("Denoise Strength", 1, 20, 5)
         
-        cap = cv2.VideoCapture(video_path)
-        fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
-
-        output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-        
-        out_fps = target_fps if mode == "fps" else fps
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_path, fourcc, out_fps, (width, height))
-
-        frame_count = 0
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
+        if st.button("🚀 Start Repairing Video", type="primary"):
+            st.write("⏳ Video Processing Started...")
+            progress_bar = st.progress(0)
             
-            processed_frame = frame
-            if mode == "repair":
+            cap = cv2.VideoCapture(video_path)
+            fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
+
+            output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+
+            frame_count = 0
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
                 processed_frame = cv2.fastNlMeansDenoisingColored(frame, None, denoise_strength, denoise_strength, 7, 21)
+                out.write(processed_frame)
+                frame_count += 1
+                progress_bar.progress(min(frame_count / total_frames, 1.0))
+
+            cap.release()
+            out.release()
+
+            st.success("🎉 Video Repair Completed!")
+            st.video(output_path)
+            with open(output_path, "rb") as file:
+                st.download_button("⬇️ Download Repaired Video", data=file, file_name="repaired_video.mp4", mime="video/mp4")
+
+    # Mode 2: Ultra HD Sharpening
+    elif "2. Ultra HD Sharpening" in mode_choice:
+        st.info("🔎 **Ultra HD Sharpening Active:** Enhances character edges and textures without altering original colors.")
+        sharpness_boost = st.slider("Edge & Detail Intensity", 1.0, 3.5, 2.20)
+        
+        if st.button("🚀 Apply Ultra HD Sharpening", type="primary"):
+            st.write("⏳ Video Processing Started...")
+            progress_bar = st.progress(0)
             
-            elif mode == "enhance":
-                # High-Precision Multi-Scale Detail Enhancement for Gaming
-                # Step 1: Unsharp Masking
+            cap = cv2.VideoCapture(video_path)
+            fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
+
+            output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+
+            frame_count = 0
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
+                # High-Precision Multi-Scale Detail Enhancement
                 gaussian = cv2.GaussianBlur(frame, (0, 0), 3.0)
                 unsharp = cv2.addWeighted(frame, sharpness_boost, gaussian, 1.0 - sharpness_boost, 0)
                 
-                # Step 2: Detail Kernel for Crisp Edges
-                kernel = np.array([[0, -1, 0],
-                                   [-1, 5, -1],
-                                   [0, -1, 0]], dtype=np.float32)
+                kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype=np.float32)
                 crisp_frame = cv2.filter2D(unsharp, -1, kernel * 0.15)
                 processed_frame = cv2.addWeighted(unsharp, 0.85, crisp_frame, 0.15, 0)
 
-            out.write(processed_frame)
-            frame_count += 1
-            progress_bar.progress(min(frame_count / total_frames, 1.0))
+                out.write(processed_frame)
+                frame_count += 1
+                progress_bar.progress(min(frame_count / total_frames, 1.0))
 
-        cap.release()
-        out.release()
+            cap.release()
+            out.release()
 
-        st.success("🎉 Processing Completed!")
-        st.video(output_path)
+            st.success("🎉 Ultra HD Sharpening Completed!")
+            st.video(output_path)
+            with open(output_path, "rb") as file:
+                st.download_button("⬇️ Download Ultra HD Video", data=file, file_name="ultrahd_video.mp4", mime="video/mp4")
+
+    # Mode 3: FPS Boost
+    elif "3. FPS Boost" in mode_choice:
+        st.info("⚡ **FPS Boost Active:** Increases the video frame rate for smoother gameplay playback.")
+        target_fps = st.select_slider("Target Frame Rate (FPS)", options=[24, 30, 60, 120], value=60)
         
-        with open(output_path, "rb") as file:
-            st.download_button(
-                label="⬇️ Download Processed Video",
-                data=file,
-                file_name="ultrahd_gaming_video.mp4",
-                mime="video/mp4"
-                )
+        if st.button("🚀 Start FPS Conversion", type="primary"):
+            st.write("⏳ Video Processing Started...")
+            progress_bar = st.progress(0)
+            
+            cap = cv2.VideoCapture(video_path)
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
+
+            output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(output_path, fourcc, target_fps, (width, height))
+
+            frame_count = 0
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                out.write(frame)
+                frame_count += 1
+                progress_bar.progress(min(frame_count / total_frames, 1.0))
+
+            cap.release()
+            out.release()
+
+            st.success("🎉 FPS Conversion Completed!")
+            st.video(output_path)
+            with open(output_path, "rb") as file:
+                st.download_button("⬇️ Download Smooth Video", data=file, file_name="smooth_fps_video.mp4", mime="video/mp4")
             
