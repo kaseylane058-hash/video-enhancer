@@ -55,7 +55,8 @@ if uploaded_file is not None:
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
 
             output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            # Changed codec to avc1 for mobile support
+            fourcc = cv2.VideoWriter_fourcc(*'avc1')
             out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
             frame_count = 0
@@ -92,7 +93,8 @@ if uploaded_file is not None:
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
 
             output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            # Changed codec to avc1 for mobile support
+            fourcc = cv2.VideoWriter_fourcc(*'avc1')
             out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
             frame_count = 0
@@ -135,7 +137,8 @@ if uploaded_file is not None:
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
 
             output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            # Changed codec to avc1 for mobile support
+            fourcc = cv2.VideoWriter_fourcc(*'avc1')
             out = cv2.VideoWriter(output_path, fourcc, target_fps, (width, height))
 
             frame_count = 0
@@ -156,4 +159,3 @@ if uploaded_file is not None:
                 st.download_button("⬇️ Download Smooth Video", data=file, file_name="smooth_fps_video.mp4", mime="video/mp4")
 else:
     st.info("👆 Please upload a video file (MP4, MOV, AVI) to start.")
-        
