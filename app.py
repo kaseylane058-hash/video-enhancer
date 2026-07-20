@@ -75,11 +75,11 @@ if uploaded_file is not None:
             cap.release()
             out.release()
 
-            # Convert to Mobile Friendly MP4 with Audio and High Quality using ffmpeg
+            # Convert to High Quality MP4 with Audio using ffmpeg
             subprocess.run([
                 'ffmpeg', '-y', '-i', temp_output, '-i', video_path, 
-                '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', 
-                '-c:a', 'aac', '-shortest', final_output
+                '-c:v', 'libx264', '-crf', '14', '-preset', 'slow', '-pix_fmt', 'yuv420p', 
+                '-c:a', 'aac', '-b:a', '192k', '-shortest', final_output
             ])
 
             st.success("🎉 Video Repair Completed!")
@@ -87,13 +87,13 @@ if uploaded_file is not None:
             with open(final_output, "rb") as file:
                 st.download_button("⬇️ Download Repaired Video", data=file, file_name="repaired_video.mp4", mime="video/mp4")
 
-    # Mode 2: Ultra HD Sharpening
+    # Mode 2: Ultra HD Sharpening (Wink Style Pro)
     elif "2. Ultra HD Sharpening" in mode_choice:
-        st.info("🔎 **Ultra HD Sharpening Active:** Enhances character edges and textures without altering original colors.")
-        sharpness_boost = st.slider("Edge & Detail Intensity", 1.0, 3.5, 2.20)
+        st.info("🔎 **Ultra HD Sharpening (Wink Style) Active:** Enhancing clarity, edges, and textures like pro mobile editors.")
+        sharpness_boost = st.slider("Edge & Detail Intensity", 1.0, 4.0, 2.8)
         
         if st.button("🚀 Apply Ultra HD Sharpening", type="primary"):
-            st.write("⏳ Video Processing Started...")
+            st.write("⏳ Video Processing Started (High Quality Mode)...")
             progress_bar = st.progress(0)
             
             cap = cv2.VideoCapture(video_path)
@@ -114,12 +114,20 @@ if uploaded_file is not None:
                 if not ret:
                     break
                 
-                gaussian = cv2.GaussianBlur(frame, (0, 0), 3.0)
-                unsharp = cv2.addWeighted(frame, sharpness_boost, gaussian, 1.0 - sharpness_boost, 0)
+                # 1. Bilateral Filter for surface smoothing while keeping edges sharp (Wink effect)
+                smooth_frame = cv2.bilateralFilter(frame, 9, 75, 75)
                 
-                kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype=np.float32)
-                crisp_frame = cv2.filter2D(unsharp, -1, kernel * 0.15)
-                processed_frame = cv2.addWeighted(unsharp, 0.85, crisp_frame, 0.15, 0)
+                # 2. Advanced Unsharp Mask for HD Details
+                gaussian = cv2.GaussianBlur(smooth_frame, (0, 0), 2.0)
+                unsharp = cv2.addWeighted(smooth_frame, sharpness_boost, gaussian, 1.0 - sharpness_boost, 0)
+                
+                # 3. Contrast & Saturation Boost for Pop Look
+                lab = cv2.cvtColor(unsharp, cv2.COLOR_BGR2LAB)
+                l, a, b = cv2.split(lab)
+                clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+                cl = clahe.apply(l)
+                limg = cv2.merge((cl, a, b))
+                processed_frame = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
 
                 out.write(processed_frame)
                 frame_count += 1
@@ -128,21 +136,21 @@ if uploaded_file is not None:
             cap.release()
             out.release()
 
-            # Convert to Mobile Friendly MP4 with Audio and High Quality using ffmpeg
+            # Convert to High Quality MP4 using Slow Preset and CRF 14
             subprocess.run([
                 'ffmpeg', '-y', '-i', temp_output, '-i', video_path, 
-                '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', 
-                '-c:a', 'aac', '-shortest', final_output
+                '-c:v', 'libx264', '-crf', '14', '-preset', 'slow', '-pix_fmt', 'yuv420p', 
+                '-c:a', 'aac', '-b:a', '192k', '-shortest', final_output
             ])
 
             st.success("🎉 Ultra HD Sharpening Completed!")
             st.video(final_output)
             with open(final_output, "rb") as file:
-                st.download_button("⬇️ Download Ultra HD Video", data=file, file_name="ultrahd_video.mp4", mime="video/mp4")
+                st.download_button("⬇️ Download Ultra HD Video", data=file, file_name="wink_style_video.mp4", mime="video/mp4")
 
     # Mode 3: FPS Boost
     elif "3. FPS Boost" in mode_choice:
-        st.info("⚡ **FPS Boost Active:** Increases the video frame rate for smoother gameplay playback.")
+        st.info("⚡ **FPS Boost Active:** Increases the video frame rate for smoother playback.")
         target_fps = st.select_slider("Target Frame Rate (FPS)", options=[24, 30, 60, 120], value=60)
         
         if st.button("🚀 Start FPS Conversion", type="primary"):
@@ -172,11 +180,11 @@ if uploaded_file is not None:
             cap.release()
             out.release()
 
-            # Convert to Mobile Friendly MP4 with Audio and High Quality using ffmpeg
+            # Convert to High Quality MP4 with Audio using ffmpeg
             subprocess.run([
                 'ffmpeg', '-y', '-i', temp_output, '-i', video_path, 
-                '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', 
-                '-c:a', 'aac', '-shortest', final_output
+                '-c:v', 'libx264', '-crf', '14', '-preset', 'slow', '-pix_fmt', 'yuv420p', 
+                '-c:a', 'aac', '-b:a', '192k', '-shortest', final_output
             ])
 
             st.success("🎉 FPS Conversion Completed!")
@@ -185,4 +193,4 @@ if uploaded_file is not None:
                 st.download_button("⬇️ Download Smooth Video", data=file, file_name="smooth_fps_video.mp4", mime="video/mp4")
 else:
     st.info("👆 Please upload a video file (MP4, MOV, AVI) to start.")
-                
+            
