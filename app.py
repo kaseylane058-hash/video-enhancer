@@ -3,12 +3,13 @@ import cv2
 import numpy as np
 import tempfile
 import os
+import subprocess
 
 st.set_page_config(page_title="Ultra HD AI Video Tool", layout="centered", page_icon="🎬")
 
 st.title("🎬 AI Video Repair, Enhancer & FPS Tool")
 
-# Step 1: Upload Video First (Restricted strictly to video files only)
+# Step 1: Upload Video First
 st.subheader("Step 1: Upload Your Video File")
 uploaded_file = st.file_uploader(
     "Upload only video files (MP4, MOV, AVI)", 
@@ -17,9 +18,9 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is not None:
-    tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
-    tfile.write(uploaded_file.read())
-    video_path = tfile.name
+    input_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+    input_tfile.write(uploaded_file.read())
+    input_path = input_tfile.name
 
     st.success("✅ Video Uploaded Successfully!")
     st.write("---")
@@ -48,15 +49,15 @@ if uploaded_file is not None:
             st.write("⏳ Video Processing Started...")
             progress_bar = st.progress(0)
             
-            cap = cv2.VideoCapture(video_path)
-            fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
+            cap = cv2.VideoCapture(input_path)
+            fps = cap.get(cv2.CAP_PROP_FPS) or 30
             width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
 
-            output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+            temp_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(temp_output, fourcc, fps, (width, height))
 
             frame_count = 0
             while cap.isOpened():
@@ -70,6 +71,10 @@ if uploaded_file is not None:
 
             cap.release()
             out.release()
+
+            # Fix video container using ffmpeg for perfect browser playback & download
+            output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+            subprocess.run(['ffmpeg', '-y', '-i', temp_output, '-vcodec', 'libx264', '-acodec', 'aac', output_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             st.success("🎉 Video Repair Completed!")
             st.video(output_path)
@@ -85,15 +90,15 @@ if uploaded_file is not None:
             st.write("⏳ Video Processing Started...")
             progress_bar = st.progress(0)
             
-            cap = cv2.VideoCapture(video_path)
-            fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
+            cap = cv2.VideoCapture(input_path)
+            fps = cap.get(cv2.CAP_PROP_FPS) or 30
             width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
 
-            output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+            temp_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(temp_output, fourcc, fps, (width, height))
 
             frame_count = 0
             while cap.isOpened():
@@ -101,7 +106,6 @@ if uploaded_file is not None:
                 if not ret:
                     break
                 
-                # High-Precision Multi-Scale Detail Enhancement
                 gaussian = cv2.GaussianBlur(frame, (0, 0), 3.0)
                 unsharp = cv2.addWeighted(frame, sharpness_boost, gaussian, 1.0 - sharpness_boost, 0)
                 
@@ -115,6 +119,10 @@ if uploaded_file is not None:
 
             cap.release()
             out.release()
+
+            # Fix video container using ffmpeg for perfect browser playback & download
+            output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+            subprocess.run(['ffmpeg', '-y', '-i', temp_output, '-vcodec', 'libx264', '-acodec', 'aac', output_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             st.success("🎉 Ultra HD Sharpening Completed!")
             st.video(output_path)
@@ -130,26 +138,11 @@ if uploaded_file is not None:
             st.write("⏳ Video Processing Started...")
             progress_bar = st.progress(0)
             
-            cap = cv2.VideoCapture(video_path)
-            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
-
             output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            out = cv2.VideoWriter(output_path, fourcc, target_fps, (width, height))
-
-            frame_count = 0
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                out.write(frame)
-                frame_count += 1
-                progress_bar.progress(min(frame_count / total_frames, 1.0))
-
-            cap.release()
-            out.release()
+            
+            # Direct FFmpeg processing for FPS conversion to ensure 100% working download
+            cmd = ['ffmpeg', '-y', '-i', input_path, '-r', str(target_fps), '-vcodec', 'libx264', '-acodec', 'aac', output_path]
+            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             st.success("🎉 FPS Conversion Completed!")
             st.video(output_path)
@@ -157,4 +150,4 @@ if uploaded_file is not None:
                 st.download_button("⬇️ Download Smooth Video", data=file, file_name="smooth_fps_video.mp4", mime="video/mp4")
 else:
     st.info("👆 Please upload a video file (MP4, MOV, AVI) to start.")
-            
+                    
