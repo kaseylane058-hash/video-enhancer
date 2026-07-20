@@ -75,8 +75,12 @@ if uploaded_file is not None:
             cap.release()
             out.release()
 
-            # Convert to Mobile Friendly MP4 using ffmpeg
-            subprocess.run(['ffmpeg', '-y', '-i', temp_output, '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', final_output])
+            # Convert to Mobile Friendly MP4 with Audio and High Quality using ffmpeg
+            subprocess.run([
+                'ffmpeg', '-y', '-i', temp_output, '-i', video_path, 
+                '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', 
+                '-c:a', 'aac', '-shortest', final_output
+            ])
 
             st.success("🎉 Video Repair Completed!")
             st.video(final_output)
@@ -124,8 +128,12 @@ if uploaded_file is not None:
             cap.release()
             out.release()
 
-            # Convert to Mobile Friendly MP4 using ffmpeg
-            subprocess.run(['ffmpeg', '-y', '-i', temp_output, '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', final_output])
+            # Convert to Mobile Friendly MP4 with Audio and High Quality using ffmpeg
+            subprocess.run([
+                'ffmpeg', '-y', '-i', temp_output, '-i', video_path, 
+                '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', 
+                '-c:a', 'aac', '-shortest', final_output
+            ])
 
             st.success("🎉 Ultra HD Sharpening Completed!")
             st.video(final_output)
@@ -164,8 +172,12 @@ if uploaded_file is not None:
             cap.release()
             out.release()
 
-            # Convert to Mobile Friendly MP4 using ffmpeg
-            subprocess.run(['ffmpeg', '-y', '-i', temp_output, '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', final_output])
+            # Convert to Mobile Friendly MP4 with Audio and High Quality using ffmpeg
+            subprocess.run([
+                'ffmpeg', '-y', '-i', temp_output, '-i', video_path, 
+                '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', 
+                '-c:a', 'aac', '-shortest', final_output
+            ])
 
             st.success("🎉 FPS Conversion Completed!")
             st.video(final_output)
@@ -173,4 +185,4 @@ if uploaded_file is not None:
                 st.download_button("⬇️ Download Smooth Video", data=file, file_name="smooth_fps_video.mp4", mime="video/mp4")
 else:
     st.info("👆 Please upload a video file (MP4, MOV, AVI) to start.")
-            
+                
