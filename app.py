@@ -34,9 +34,9 @@ if uploaded_file is not None:
     mode_choice = st.radio(
         "Select processing mode:",
         (
-            "🛠️ 1. AI Video Repair (Remove Noise & Grain)",
-            "🔎 2. Ultra HD Sharpening (Remove Blur & Enhance Details)",
-            "⚡ 3. FPS Boost (Make Video Smoother)"
+            "🛠️ 1. AI Video Repair (Auto Noise & Grain Removal)",
+            "🔎 2. Ultra HD Sharpening (Auto & Color Safe)",
+            "⚡ 3. FPS Boost (Link / URL Controlled)"
         ),
         index=1
     )
@@ -44,11 +44,36 @@ if uploaded_file is not None:
     st.write("---")
     st.subheader("Step 3: Settings & Processing")
 
+    # Mode 1: AI Video Repair with Auto Analysis
     if "1. AI Video Repair" in mode_choice:
-        st.info("🛠️ **AI Video Repair Active:** Removes noise, grain, and pixelation artifacts.")
-        denoise_strength = st.slider("Denoise Strength", 1, 20, 5)
+        st.info("🛠️ **AI Video Repair Active:** Automatically analyzing video noise levels and applying optimal restoration.")
         
-        if st.button("🚀 Start Repairing Video", type="primary"):
+        # Auto-analyze noise/grain level from the video frames
+        cap_test = cv2.VideoCapture(video_path)
+        noise_samples = []
+        for _ in range(15):
+            ret, frame = cap_test.read()
+            if not ret:
+                break
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # Standard deviation can indicate noise/grain level in uniform areas
+            sigma = np.std(gray)
+            noise_samples.append(sigma)
+        cap_test.release()
+        
+        avg_noise = np.mean(noise_samples) if noise_samples else 10
+        
+        # Auto-tune denoise strength based on video characteristics
+        if avg_noise > 25:
+            auto_denoise = 12
+        elif avg_noise > 15:
+            auto_denoise = 8
+        else:
+            auto_denoise = 4
+            
+        st.write(f"✨ **Auto-Detected Denoise Strength:** `{auto_denoise}` (Optimized for your video)")
+        
+        if st.button("🚀 Start Auto Repairing Video", type="primary"):
             st.write("⏳ Video Processing Started...")
             progress_bar = st.progress(0)
             
@@ -69,7 +94,7 @@ if uploaded_file is not None:
                 ret, frame = cap.read()
                 if not ret:
                     break
-                processed_frame = cv2.fastNlMeansDenoisingColored(frame, None, denoise_strength, denoise_strength, 7, 21)
+                processed_frame = cv2.fastNlMeansDenoisingColored(frame, None, auto_denoise, auto_denoise, 7, 21)
                 out.write(processed_frame)
                 frame_count += 1
                 progress_bar.progress(min(frame_count / total_frames, 1.0))
@@ -88,12 +113,36 @@ if uploaded_file is not None:
             with open(final_output, "rb") as file:
                 st.download_button("⬇️ Download Repaired Video", data=file, file_name="repaired_video.mp4", mime="video/mp4")
 
+    # Mode 2: Ultra HD Sharpening with Auto Analysis & Color Preservation
     elif "2. Ultra HD Sharpening" in mode_choice:
-        st.info("🔎 **Ultra HD Sharpening (Wink Style) Active:** Enhancing clarity, edges, and textures like pro mobile editors.")
-        sharpness_boost = st.slider("Edge & Detail Intensity", 1.0, 4.0, 2.8)
+        st.info("🔎 **Ultra HD Sharpening Active:** Automatically analyzing blur/clarity levels and preserving original colors.")
         
-        if st.button("🚀 Apply Ultra HD Sharpening", type="primary"):
-            st.write("⏳ Video Processing Started (High Quality Mode)...")
+        # Auto Intensity Calculation based on video blur/clarity analysis
+        cap_test = cv2.VideoCapture(video_path)
+        blur_scores = []
+        for _ in range(15):
+            ret, frame = cap_test.read()
+            if not ret:
+                break
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            score = cv2.Laplacian(gray, cv2.CV_64F).var()
+            blur_scores.append(score)
+        cap_test.release()
+        
+        avg_blur = np.mean(blur_scores) if blur_scores else 100
+        
+        # Auto-tune logic based on blur score
+        if avg_blur < 50:
+            auto_sharpness = 2.8
+        elif avg_blur < 150:
+            auto_sharpness = 2.0
+        else:
+            auto_sharpness = 1.5
+            
+        st.write(f"✨ **Auto-Detected Sharpness Intensity:** `{auto_sharpness}` (Optimized for your video)")
+
+        if st.button("🚀 Apply Auto Ultra HD Sharpening", type="primary"):
+            st.write("⏳ Video Processing Started (Auto-Optimized Mode)...")
             progress_bar = st.progress(0)
             
             cap = cv2.VideoCapture(video_path)
@@ -114,16 +163,16 @@ if uploaded_file is not None:
                 if not ret:
                     break
                 
-                smooth_frame = cv2.bilateralFilter(frame, 9, 75, 75)
-                gaussian = cv2.GaussianBlur(smooth_frame, (0, 0), 2.0)
-                unsharp = cv2.addWeighted(smooth_frame, sharpness_boost, gaussian, 1.0 - sharpness_boost, 0)
+                # Convert to YUV color space to protect U and V (color channels) from distortion
+                yuv = cv2.cvtColor(frame, cv2.COLOR_BGR2YUV)
+                y, u, v = cv2.split(yuv)
                 
-                lab = cv2.cvtColor(unsharp, cv2.COLOR_BGR2LAB)
-                l, a, b = cv2.split(lab)
-                clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-                cl = clahe.apply(l)
-                limg = cv2.merge((cl, a, b))
-                processed_frame = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+                smooth_y = cv2.bilateralFilter(y, 9, 75, 75)
+                gaussian = cv2.GaussianBlur(smooth_y, (0, 0), 2.0)
+                unsharp_y = cv2.addWeighted(smooth_y, auto_sharpness, gaussian, 1.0 - auto_sharpness, 0)
+                
+                merged_yuv = cv2.merge((unsharp_y, u, v))
+                processed_frame = cv2.cvtColor(merged_yuv, cv2.COLOR_YUV2BGR)
 
                 out.write(processed_frame)
                 frame_count += 1
@@ -143,6 +192,7 @@ if uploaded_file is not None:
             with open(final_output, "rb") as file:
                 st.download_button("⬇️ Download Ultra HD Video", data=file, file_name="wink_style_video.mp4", mime="video/mp4")
 
+    # Mode 3: FPS Boost (Link / URL Controlled)
     elif "3. FPS Boost" in mode_choice:
         st.info("⚡ **FPS Boost Active:** Controlled via URL link (e.g., `?fps=60`).")
         
@@ -174,4 +224,4 @@ if uploaded_file is not None:
                 st.download_button("⬇️ Download Smooth Video", data=file, file_name="smooth_fps_video.mp4", mime="video/mp4")
 else:
     st.info("👆 Please upload a video file (MP4, MOV, AVI) to start.")
-                
+            
