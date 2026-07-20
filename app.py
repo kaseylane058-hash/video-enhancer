@@ -4,9 +4,9 @@ import numpy as np
 import tempfile
 import os
 
-st.set_page_config(page_title="Ultra HD AI Video Tool", layout="centered", page_icon="🎬")
+st.set_page_config(page_title="Ultra HD Gaming Enhancer", layout="centered", page_icon="🎬")
 
-st.title("🎬 AI Video Repair, Enhancer & FPS Control")
+st.title("🎬 Gaming Video Ultra HD Sharpening Tool")
 st.write("Select a mode below to process your video:")
 
 uploaded_file = st.file_uploader("Upload Video File (MP4, MOV, AVI)", type=["mp4", "mov", "avi"])
@@ -17,29 +17,27 @@ if uploaded_file is not None:
     video_path = tfile.name
 
     # Create Tabs for 3 Separate Features
-    tab1, tab2, tab3 = st.tabs(["🛠️ 1. AI Video Repair", "🎨 2. Video Enhancer", "⚡ 3. FPS Boost"])
+    tab1, tab2, tab3 = st.tabs(["🛠️ 1. AI Video Repair", "🔎 2. Ultra HD Sharpening", "⚡ 3. FPS Boost"])
 
     mode = None
     
     with tab1:
         st.subheader("🛠️ AI Video Repair (Denoise & Grain Removal)")
-        st.caption("Remove noise, grain, and artifacts from your video.")
+        st.caption("Remove noise, grain, and pixelation artifacts.")
         denoise_strength = st.slider("Denoise Strength", 1, 20, 5, key="repair_denoise")
         if st.button("Start Repairing Video", type="primary"):
             mode = "repair"
 
     with tab2:
-        st.subheader("🎨 Ultra HD Clarity & Color Enhancer")
-        st.caption("Enhance clarity, sharpness, contrast, and color saturation.")
-        clarity = st.slider("Clarity / Sharpness Boost", 1.0, 3.0, 1.5, key="enhancer_clarity")
-        contrast = st.slider("Contrast Enhancement", 0.8, 2.0, 1.2, key="enhancer_contrast")
-        saturation = st.slider("Color Saturation", 0.8, 2.0, 1.3, key="enhancer_sat")
-        if st.button("Start Enhancing Video", type="primary"):
+        st.subheader("🔎 Ultra Gaming HD Clarity & Edge Sharpening")
+        st.caption("Enhances fine details, textures, and character edges for a crisp 4K gaming look.")
+        sharpness_boost = st.slider("Edge & Detail Intensity", 1.0, 3.5, 2.2, key="crisp_sharpness")
+        if st.button("🚀 Apply Ultra HD Sharpening", type="primary"):
             mode = "enhance"
 
     with tab3:
         st.subheader("⚡ Frame Rate & Smoothness (FPS)")
-        st.caption("Change video frame rate (FPS) for smoother playback.")
+        st.caption("Boost video frame rate (FPS) for ultra-smooth gameplay.")
         target_fps = st.select_slider("Target Frame Rate (FPS)", options=[24, 30, 60, 120], value=60, key="fps_target")
         if st.button("Start FPS Conversion", type="primary"):
             mode = "fps"
@@ -73,15 +71,17 @@ if uploaded_file is not None:
                 processed_frame = cv2.fastNlMeansDenoisingColored(frame, None, denoise_strength, denoise_strength, 7, 21)
             
             elif mode == "enhance":
-                gaussian = cv2.GaussianBlur(frame, (0, 0), 3)
-                sharpened = cv2.addWeighted(frame, clarity, gaussian, 1 - clarity, 0)
+                # High-Precision Multi-Scale Detail Enhancement for Gaming
+                # Step 1: Unsharp Masking
+                gaussian = cv2.GaussianBlur(frame, (0, 0), 3.0)
+                unsharp = cv2.addWeighted(frame, sharpness_boost, gaussian, 1.0 - sharpness_boost, 0)
                 
-                hsv = cv2.cvtColor(sharpened, cv2.COLOR_BGR2HSV).astype(np.float32)
-                hsv[:, :, 1] *= saturation
-                hsv[:, :, 2] *= contrast
-                hsv[:, :, 1] = np.clip(hsv[:, :, 1], 0, 255)
-                hsv[:, :, 2] = np.clip(hsv[:, :, 2], 0, 255)
-                processed_frame = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
+                # Step 2: Detail Kernel for Crisp Edges
+                kernel = np.array([[0, -1, 0],
+                                   [-1, 5, -1],
+                                   [0, -1, 0]], dtype=np.float32)
+                crisp_frame = cv2.filter2D(unsharp, -1, kernel * 0.15)
+                processed_frame = cv2.addWeighted(unsharp, 0.85, crisp_frame, 0.15, 0)
 
             out.write(processed_frame)
             frame_count += 1
@@ -97,7 +97,7 @@ if uploaded_file is not None:
             st.download_button(
                 label="⬇️ Download Processed Video",
                 data=file,
-                file_name="processed_video.mp4",
+                file_name="ultrahd_gaming_video.mp4",
                 mime="video/mp4"
-        )
-                                            
+                )
+            
