@@ -156,41 +156,22 @@ if uploaded_file is not None:
         
         if st.button("🚀 Start FPS Conversion", type="primary"):
             st.write("⏳ Video Processing Started...")
-            progress_bar = st.progress(0)
+            progress_bar = st.progress(50)
             
-            cap = cv2.VideoCapture(video_path)
-            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
-
-            temp_output = tempfile.NamedTemporaryFile(delete=False, suffix='.avi').name
             final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
             
-            fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-            out = cv2.VideoWriter(temp_output, fourcc, int(target_fps), (width, height))
-
-            frame_count = 0
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                out.write(frame)
-                frame_count += 1
-                progress_bar.progress(min(frame_count / total_frames, 1.0))
-
-            cap.release()
-            out.release()
-
             subprocess.run([
-                'ffmpeg', '-y', '-i', temp_output, '-i', video_path, 
+                'ffmpeg', '-y', '-i', video_path, 
+                '-filter:v', f'fps={target_fps}', 
                 '-c:v', 'libx264', '-crf', '14', '-preset', 'slow', '-pix_fmt', 'yuv420p', 
-                '-c:a', 'aac', '-b:a', '192k', '-shortest', final_output
+                '-c:a', 'aac', '-b:a', '192k', final_output
             ])
-
+            
+            progress_bar.progress(100)
             st.success("🎉 FPS Conversion Completed!")
             st.video(final_output)
             with open(final_output, "rb") as file:
                 st.download_button("⬇️ Download Smooth Video", data=file, file_name="smooth_fps_video.mp4", mime="video/mp4")
 else:
     st.info("👆 Please upload a video file (MP4, MOV, AVI) to start.")
-            
+                
