@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="Mjrsweb", layout="centered", page_icon="🎬")
 
 
-st.title("🎬 AI Video Repair, Enhancer & FPS Tool")
+st.title("Mjrsweb")
 
 # Step 1: Upload Video First
 st.subheader("Step 1: Upload Your Video File")
