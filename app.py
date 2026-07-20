@@ -7,28 +7,34 @@ import os
 st.set_page_config(page_title="Ultra HD AI Video Tool", layout="centered", page_icon="🎬")
 
 st.title("🎬 AI Video Repair, Enhancer & FPS Tool")
-st.write("Step 1: Choose the action you want to perform:")
 
-# Step 1: Select Action First
-mode_choice = st.radio(
-    "Select an option based on your needs:",
-    (
-        "🛠️ 1. AI Video Repair (Remove Noise & Grain)",
-        "🔎 2. Ultra HD Sharpening (Remove Blur & Enhance Details)",
-        "⚡ 3. FPS Boost (Make Video Smoother)"
-    ),
-    index=1
+# Step 1: Upload Video First (Restricted strictly to video files only)
+st.subheader("Step 1: Upload Your Video File")
+uploaded_file = st.file_uploader(
+    "Upload only video files (MP4, MOV, AVI)", 
+    type=["mp4", "mov", "avi"],
+    help="Other file formats are not allowed. Please upload a valid video."
 )
-
-st.write("---")
-st.subheader("Step 2: Upload Your Video File")
-
-uploaded_file = st.file_uploader("Select Video File (MP4, MOV, AVI)", type=["mp4", "mov", "avi"])
 
 if uploaded_file is not None:
     tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
     tfile.write(uploaded_file.read())
     video_path = tfile.name
+
+    st.success("✅ Video Uploaded Successfully!")
+    st.write("---")
+
+    # Step 2: Choose Action After Upload
+    st.subheader("Step 2: Choose What You Want to Do")
+    mode_choice = st.radio(
+        "Select processing mode:",
+        (
+            "🛠️ 1. AI Video Repair (Remove Noise & Grain)",
+            "🔎 2. Ultra HD Sharpening (Remove Blur & Enhance Details)",
+            "⚡ 3. FPS Boost (Make Video Smoother)"
+        ),
+        index=1
+    )
 
     st.write("---")
     st.subheader("Step 3: Settings & Processing")
@@ -49,7 +55,7 @@ if uploaded_file is not None:
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
 
             output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
             out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
             frame_count = 0
@@ -86,7 +92,7 @@ if uploaded_file is not None:
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
 
             output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
             out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
             frame_count = 0
@@ -130,7 +136,7 @@ if uploaded_file is not None:
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
 
             output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
             out = cv2.VideoWriter(output_path, fourcc, target_fps, (width, height))
 
             frame_count = 0
@@ -149,4 +155,6 @@ if uploaded_file is not None:
             st.video(output_path)
             with open(output_path, "rb") as file:
                 st.download_button("⬇️ Download Smooth Video", data=file, file_name="smooth_fps_video.mp4", mime="video/mp4")
+else:
+    st.info("👆 Please upload a video file (MP4, MOV, AVI) to start.")
             
