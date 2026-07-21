@@ -30,7 +30,7 @@ if uploaded_file is not None:
     st.success("✅ Video Uploaded Successfully!")
     st.write("---")
 
-    # Smart Video Type Detection (Game vs Camera)
+    # Smart Video Type Detection (Game vs Camera Analysis)
     cap_detect = cv2.VideoCapture(video_path)
     saturation_scores = []
     edge_scores = []
@@ -39,11 +39,9 @@ if uploaded_file is not None:
         ret, frame = cap_detect.read()
         if not ret:
             break
-        # Convert to HSV to check color saturation (Games usually have higher saturation)
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         saturation_scores.append(np.mean(hsv[:, :, 1]))
         
-        # Check edge sharpness using Laplacian
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         edge_scores.append(cv2.Laplacian(gray, cv2.CV_64F).var())
         
@@ -52,42 +50,29 @@ if uploaded_file is not None:
     avg_saturation = np.mean(saturation_scores) if saturation_scores else 100
     avg_edges = np.mean(edge_scores) if edge_scores else 100
     
-    # Classification Logic
-    if avg_saturation > 90 and avg_edges > 200:
-        detected_type = "🎮 Gaming Video (High Saturation & Sharp Edges)"
-    else:
-        detected_type = "📸 Camera / Real-Life Video (Natural Tones & Soft Textures)"
-
-    st.info(f"🧠 **AI Self-Analysis Result:** Detected as **{detected_type}**")
-    st.write("---")
+    is_game = avg_saturation > 90 and avg_edges > 200
 
     st.subheader("Step 2: Choose What You Want to Do")
     mode_choice = st.radio(
         "Select processing mode:",
         (
-            "🛠️ 1. AI Video Repair (Self-Adapts to Game/Camera)",
-            "🔎 2. Ultra HD Sharpening (Adaptive Game & Camera Enhancer)",
-            "⚡ 3. FPS Boost (Link / URL Controlled)"
+            "🛠️ 1. AI Video Repair (Noise & Grain Removal)",
+            "🔎 2. Ultra HD Sharpening (Enhance Details)",
+            "🎮 3. Game Restoration (Wink Style Pro)",
+            "⚡ 4. FPS Boost (Link / URL Controlled)"
         ),
-        index=1
+        index=2
     )
 
     st.write("---")
     st.subheader("Step 3: Settings & Processing")
 
-    # Mode 1: AI Video Repair (Automatically adjusts based on Game or Camera)
+    # Option 1: AI Video Repair
     if "1. AI Video Repair" in mode_choice:
-        if "Gaming" in detected_type:
-            st.info("🛠️ **AI Repair Active (Gaming Mode):** Optimizing graphics clarity, clearing compression artifacts, and locking vibrant colors.")
-            denoise_val = 5
-            ai_boost = 1.8
-        else:
-            st.info("🛠️ **AI Repair Active (Camera Mode):** Enhancing skin textures, removing sensor grain, and preserving realistic lighting.")
-            denoise_val = 8
-            ai_boost = 1.4
-
-        if st.button("🚀 Start Smart AI Video Repair", type="primary"):
-            st.write("⏳ Video Processing Started (Smart AI Mode)...")
+        st.info("🛠️ **AI Video Repair Active:** Automatically removing noise and sensor grain while keeping colors safe.")
+        
+        if st.button("🚀 Start AI Video Repair", type="primary"):
+            st.write("⏳ Video Processing Started...")
             progress_bar = st.progress(0)
             
             cap = cv2.VideoCapture(video_path)
@@ -108,20 +93,7 @@ if uploaded_file is not None:
                 if not ret:
                     break
                 
-                # Smart Denoise & Artifact Removal
-                denoised = cv2.fastNlMeansDenoisingColored(frame, None, denoise_val, denoise_val, 7, 21)
-                
-                # Color Safe Processing using YUV
-                yuv = cv2.cvtColor(denoised, cv2.COLOR_BGR2YUV)
-                y, u, v = cv2.split(yuv)
-                
-                smooth_y = cv2.bilateralFilter(y, 9, 60, 60)
-                gaussian = cv2.GaussianBlur(smooth_y, (0, 0), 1.5)
-                enhanced_y = cv2.addWeighted(smooth_y, ai_boost, gaussian, 1.0 - ai_boost, 0)
-                
-                merged_yuv = cv2.merge((enhanced_y, u, v))
-                processed_frame = cv2.cvtColor(merged_yuv, cv2.COLOR_YUV2BGR)
-
+                processed_frame = cv2.fastNlMeansDenoisingColored(frame, None, 6, 6, 7, 21)
                 out.write(processed_frame)
                 frame_count += 1
                 progress_bar.progress(min(frame_count / total_frames, 1.0))
@@ -135,20 +107,15 @@ if uploaded_file is not None:
                 '-c:a', 'aac', '-b:a', '192k', '-shortest', final_output
             ])
 
-            st.success("🎉 Smart AI Video Repair Completed!")
+            st.success("🎉 AI Video Repair Completed!")
             st.video(final_output)
             with open(final_output, "rb") as file:
-                st.download_button("⬇️ Download Repaired Video", data=file, file_name="smart_ai_repaired.mp4", mime="video/mp4")
+                st.download_button("⬇️ Download Repaired Video", data=file, file_name="repaired_video.mp4", mime="video/mp4")
 
-    # Mode 2: Ultra HD Sharpening
+    # Option 2: Ultra HD Sharpening
     elif "2. Ultra HD Sharpening" in mode_choice:
-        if "Gaming" in detected_type:
-            st.info("🔎 **Ultra HD Sharpening Active (Gaming Mode):** Maximizing edge clarity for gameplay action.")
-            sharpness_val = 2.4
-        else:
-            st.info("🔎 **Ultra HD Sharpening Active (Camera Mode):** Enhancing fine details smoothly without artificial harshness.")
-            sharpness_val = 1.7
-
+        st.info("🔎 **Ultra HD Sharpening Active:** Enhancing clarity and details smoothly.")
+        
         if st.button("🚀 Apply Ultra HD Sharpening", type="primary"):
             st.write("⏳ Video Processing Started...")
             progress_bar = st.progress(0)
@@ -176,7 +143,7 @@ if uploaded_file is not None:
                 
                 smooth_y = cv2.bilateralFilter(y, 9, 75, 75)
                 gaussian = cv2.GaussianBlur(smooth_y, (0, 0), 2.0)
-                unsharp_y = cv2.addWeighted(smooth_y, sharpness_val, gaussian, 1.0 - sharpness_val, 0)
+                unsharp_y = cv2.addWeighted(smooth_y, 1.8, gaussian, -0.8, 0)
                 
                 merged_yuv = cv2.merge((unsharp_y, u, v))
                 processed_frame = cv2.cvtColor(merged_yuv, cv2.COLOR_YUV2BGR)
@@ -197,14 +164,70 @@ if uploaded_file is not None:
             st.success("🎉 Ultra HD Sharpening Completed!")
             st.video(final_output)
             with open(final_output, "rb") as file:
-                st.download_button("⬇️ Download Ultra HD Video", data=file, file_name="wink_style_video.mp4", mime="video/mp4")
+                st.download_button("⬇️ Download Ultra HD Video", data=file, file_name="ultrahd_video.mp4", mime="video/mp4")
 
-    # Mode 3: FPS Boost (Link / URL Controlled)
-    elif "3. FPS Boost" in mode_choice:
-        st.info("⚡ **FPS Boost Active:** Controlled via URL link (e.g., `?fps=60`).")
+    # Option 3: Game Restoration (Wink Style Pro)
+    elif "3. Game Restoration" in mode_choice:
+        st.info("🎮 **Game Restoration Active:** Specifically tuned for gaming footage (Free Fire, PUBG etc.) to pop colors and fix pixel blur.")
+        
+        if st.button("🚀 Start Game Restoration", type="primary"):
+            st.write("⏳ Processing Game Restoration...")
+            progress_bar = st.progress(0)
+            
+            cap = cv2.VideoCapture(video_path)
+            fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
+
+            temp_output = tempfile.NamedTemporaryFile(delete=False, suffix='.avi').name
+            final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+            
+            fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+            out = cv2.VideoWriter(temp_output, fourcc, fps, (width, height))
+
+            frame_count = 0
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
+                # Heavy Game Texture Boost & Artifact Cleanup
+                denoised = cv2.fastNlMeansDenoisingColored(frame, None, 4, 4, 7, 21)
+                yuv = cv2.cvtColor(denoised, cv2.COLOR_BGR2YUV)
+                y, u, v = cv2.split(yuv)
+                
+                smooth_y = cv2.bilateralFilter(y, 9, 50, 50)
+                gaussian = cv2.GaussianBlur(smooth_y, (0, 0), 1.2)
+                game_enhanced_y = cv2.addWeighted(smooth_y, 2.2, gaussian, -1.2, 0)
+                
+                merged_yuv = cv2.merge((game_enhanced_y, u, v))
+                processed_frame = cv2.cvtColor(merged_yuv, cv2.COLOR_YUV2BGR)
+
+                out.write(processed_frame)
+                frame_count += 1
+                progress_bar.progress(min(frame_count / total_frames, 1.0))
+
+            cap.release()
+            out.release()
+
+            subprocess.run([
+                'ffmpeg', '-y', '-i', temp_output, '-i', video_path, 
+                '-c:v', 'libx264', '-crf', '14', '-preset', 'slow', '-pix_fmt', 'yuv420p', 
+                '-c:a', 'aac', '-b:a', '192k', '-shortest', final_output
+            ])
+
+            st.success("🎉 Game Restoration Completed!")
+            st.video(final_output)
+            with open(final_output, "rb") as file:
+                st.download_button("⬇️ Download Restored Game Video", data=file, file_name="game_restored_video.mp4", mime="video/mp4")
+
+    # Option 4: FPS Boost
+    elif "4. FPS Boost" in mode_choice:
+        st.info("⚡ **FPS Boost Active:** Controlled via URL link (e.g., `?fps=60` or `?fps=90`).")
         
         target_fps = st.number_input(
-            "Target FPS (You can also change this directly via link like ?fps=90)", 
+            "Target FPS", 
             min_value=10, 
             max_value=240, 
             value=default_fps_from_url, 
