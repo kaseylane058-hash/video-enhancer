@@ -61,25 +61,9 @@ if uploaded_file is not None:
     )
 
     st.write("---")
-    st.subheader("Step 3: Save & Export Settings")
-    
-    # Updated Save Resolutions including 4K, 2K, 1080p, 720p and Original
-    save_resolution = st.selectbox(
-        "Select Output Download Resolution:",
-        (
-            "4K Ultra HD (3840x2160)",
-            "2K QHD (2560x1440)",
-            "1080p Full HD (1920x1080)",
-            "720p HD (Fast Processing)",
-            "Original Resolution"
-        ),
-        index=2
-    )
+    st.subheader("Step 3: Processing")
 
-    st.write("---")
-    st.subheader("Step 4: Processing")
-
-    # Processing resolution set to 720p for blazing fast speed, upscale on final save
+    # Processing resolution set to 720p for blazing fast speed
     proc_width, proc_height = 1280, 720
 
     # Custom FPS Logic: If original FPS is <= 30, keep 30 FPS. If high, reduce to 45 FPS to save processing time without losing quality.
@@ -88,7 +72,7 @@ if uploaded_file is not None:
     else:
         target_processing_fps = 45
 
-    # Helper function for FFmpeg resolution scaling filter
+    # Helper function for FFmpeg resolution scaling filter during download
     def get_scale_filter(res_choice):
         if "4K" in res_choice:
             return "scale=3840:2160:flags=lanczos"
@@ -101,6 +85,41 @@ if uploaded_file is not None:
         else:
             return f"scale={orig_width}:{orig_height}:flags=lanczos"
 
+    # Common function to handle export and download selection at the end
+    def render_download_section(processed_video_path, default_filename):
+        st.write("---")
+        st.subheader("Step 4: Select Download Resolution & Export")
+        
+        # Resolution selector appears only when download time comes
+        save_resolution = st.selectbox(
+            "Select Output Download Resolution:",
+            (
+                "4K Ultra HD (3840x2160)",
+                "2K QHD (2560x1440)",
+                "1080p Full HD (1920x1080)",
+                "720p HD (Fast Processing)",
+                "Original Resolution"
+            ),
+            index=2
+        )
+
+        if st.button("✨ Generate Final Download Video", type="primary"):
+            with st.spinner("⏳ Rendering final video with selected resolution..."):
+                final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+                scale_filter = get_scale_filter(save_resolution)
+
+                subprocess.run([
+                    'ffmpeg', '-y', '-i', processed_video_path, '-i', video_path, 
+                    '-vf', scale_filter,
+                    '-c:v', 'libx264', '-crf', '14', '-preset', 'slow', '-pix_fmt', 'yuv420p', 
+                    '-c:a', 'aac', '-b:a', '192k', '-shortest', final_output
+                ])
+                
+                st.success("🎉 Video Ready for Download!")
+                st.video(final_output)
+                with open(final_output, "rb") as file:
+                    st.download_button("⬇️ Download Video", data=file, file_name=default_filename, mime="video/mp4")
+
     # Option 1: AI Video Repair
     if "1. AI Video Repair" in mode_choice:
         st.info("🛠️ **AI Video Repair Active:** Cleaning noise and preserving original texture quality.")
@@ -111,7 +130,6 @@ if uploaded_file is not None:
             
             cap = cv2.VideoCapture(video_path)
             temp_output = tempfile.NamedTemporaryFile(delete=False, suffix='.avi').name
-            final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
             
             fourcc = cv2.VideoWriter_fourcc(*'MJPG')
             out = cv2.VideoWriter(temp_output, fourcc, target_processing_fps, (proc_width, proc_height))
@@ -130,20 +148,12 @@ if uploaded_file is not None:
 
             cap.release()
             out.release()
+            st.session_state['processed_video'] = temp_output
+            st.session_state['default_filename'] = "repaired_video.mp4"
+            st.success("🎉 Processing Completed! Choose your download resolution below.")
 
-            scale_filter = get_scale_filter(save_resolution)
-
-            subprocess.run([
-                'ffmpeg', '-y', '-i', temp_output, '-i', video_path, 
-                '-vf', scale_filter,
-                '-c:v', 'libx264', '-crf', '14', '-preset', 'slow', '-pix_fmt', 'yuv420p', 
-                '-c:a', 'aac', '-b:a', '192k', '-shortest', final_output
-            ])
-
-            st.success("🎉 AI Video Repair Completed!")
-            st.video(final_output)
-            with open(final_output, "rb") as file:
-                st.download_button("⬇️ Download Repaired Video", data=file, file_name="repaired_video.mp4", mime="video/mp4")
+        if 'processed_video' in st.session_state and st.session_state.get('default_filename') == "repaired_video.mp4":
+            render_download_section(st.session_state['processed_video'], st.session_state['default_filename'])
 
     # Option 2: Ultra HD Sharpening
     elif "2. Ultra HD Sharpening" in mode_choice:
@@ -155,7 +165,6 @@ if uploaded_file is not None:
             
             cap = cv2.VideoCapture(video_path)
             temp_output = tempfile.NamedTemporaryFile(delete=False, suffix='.avi').name
-            final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
             
             fourcc = cv2.VideoWriter_fourcc(*'MJPG')
             out = cv2.VideoWriter(temp_output, fourcc, target_processing_fps, (proc_width, proc_height))
@@ -183,20 +192,12 @@ if uploaded_file is not None:
 
             cap.release()
             out.release()
+            st.session_state['processed_video'] = temp_output
+            st.session_state['default_filename'] = "ultrahd_video.mp4"
+            st.success("🎉 Processing Completed! Choose your download resolution below.")
 
-            scale_filter = get_scale_filter(save_resolution)
-
-            subprocess.run([
-                'ffmpeg', '-y', '-i', temp_output, '-i', video_path, 
-                '-vf', scale_filter,
-                '-c:v', 'libx264', '-crf', '14', '-preset', 'slow', '-pix_fmt', 'yuv420p', 
-                '-c:a', 'aac', '-b:a', '192k', '-shortest', final_output
-            ])
-
-            st.success("🎉 Ultra HD Sharpening Completed!")
-            st.video(final_output)
-            with open(final_output, "rb") as file:
-                st.download_button("⬇️ Download Ultra HD Video", data=file, file_name="ultrahd_video.mp4", mime="video/mp4")
+        if 'processed_video' in st.session_state and st.session_state.get('default_filename') == "ultrahd_video.mp4":
+            render_download_section(st.session_state['processed_video'], st.session_state['default_filename'])
 
     # Option 3: Game Restoration (Wink Style Pro)
     elif "3. Game Restoration" in mode_choice:
@@ -208,7 +209,6 @@ if uploaded_file is not None:
             
             cap = cv2.VideoCapture(video_path)
             temp_output = tempfile.NamedTemporaryFile(delete=False, suffix='.avi').name
-            final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
             
             fourcc = cv2.VideoWriter_fourcc(*'MJPG')
             out = cv2.VideoWriter(temp_output, fourcc, target_processing_fps, (proc_width, proc_height))
@@ -237,20 +237,12 @@ if uploaded_file is not None:
 
             cap.release()
             out.release()
+            st.session_state['processed_video'] = temp_output
+            st.session_state['default_filename'] = "game_restored_video.mp4"
+            st.success("🎉 Processing Completed! Choose your download resolution below.")
 
-            scale_filter = get_scale_filter(save_resolution)
-
-            subprocess.run([
-                'ffmpeg', '-y', '-i', temp_output, '-i', video_path, 
-                '-vf', scale_filter,
-                '-c:v', 'libx264', '-crf', '14', '-preset', 'slow', '-pix_fmt', 'yuv420p', 
-                '-c:a', 'aac', '-b:a', '192k', '-shortest', final_output
-            ])
-
-            st.success("🎉 Game Restoration Completed!")
-            st.video(final_output)
-            with open(final_output, "rb") as file:
-                st.download_button("⬇️ Download Restored Game Video", data=file, file_name="game_restored_video.mp4", mime="video/mp4")
+        if 'processed_video' in st.session_state and st.session_state.get('default_filename') == "game_restored_video.mp4":
+            render_download_section(st.session_state['processed_video'], st.session_state['default_filename'])
 
     # Option 4: FPS Boost
     elif "4. FPS Boost" in mode_choice:
@@ -268,23 +260,22 @@ if uploaded_file is not None:
             st.write("⏳ Video Processing Started...")
             progress_bar = st.progress(50)
             
-            final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+            temp_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
             
-            scale_filter = get_scale_filter(save_resolution)
-
             subprocess.run([
                 'ffmpeg', '-y', '-i', video_path, 
                 '-filter:v', f'fps={target_fps}', 
-                '-vf', scale_filter,
                 '-c:v', 'libx264', '-crf', '14', '-preset', 'slow', '-pix_fmt', 'yuv420p', 
-                '-c:a', 'aac', '-b:a', '192k', final_output
+                '-c:a', 'aac', '-b:a', '192k', temp_output
             ])
             
             progress_bar.progress(100)
-            st.success("🎉 FPS Conversion Completed!")
-            st.video(final_output)
-            with open(final_output, "rb") as file:
-                st.download_button("⬇️ Download Smooth Video", data=file, file_name="smooth_fps_video.mp4", mime="video/mp4")
+            st.session_state['processed_video'] = temp_output
+            st.session_state['default_filename'] = "smooth_fps_video.mp4"
+            st.success("🎉 FPS Conversion Completed! Choose your download resolution below.")
+
+        if 'processed_video' in st.session_state and st.session_state.get('default_filename') == "smooth_fps_video.mp4":
+            render_download_section(st.session_state['processed_video'], st.session_state['default_filename'])
 else:
     st.info("👆 Please upload a video file (MP4, MOV, AVI) to start.")
-            
+    
