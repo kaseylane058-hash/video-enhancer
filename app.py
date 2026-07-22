@@ -21,22 +21,24 @@ if uploaded_file is not None:
             "🛠️ 1. AI Video Repair (Noise & Grain Removal)",
             "🔎 2. Ultra HD Sharpening (Enhance Details)",
             "🎮 3. Game Restoration (Wink Style Pro)",
-            "⚡ 4. Custom FPS & Enhancement"
+            "⚡ 4. Custom FPS Boost Only"
         ),
         index=2
     )
 
-    # User can manually type or select desired FPS here
-    st.write("---")
-    st.subheader("⚙️ Custom FPS Settings")
-    target_fps = st.number_input(
-        "Enter Target FPS (e.g., 30, 45, 60):", 
-        min_value=10, 
-        max_value=240, 
-        value=60, 
-        step=1,
-        help="Type the exact FPS you want for your final video."
-    )
+    # FPS input box will appear ONLY when Mode 4 is selected
+    target_fps = 60  # Default value
+    if "4. Custom FPS Boost Only" in mode_choice:
+        st.write("---")
+        st.subheader("⚙️ Custom FPS Settings")
+        target_fps = st.number_input(
+            "Enter Target FPS (e.g., 30, 45, 60):", 
+            min_value=10, 
+            max_value=240, 
+            value=60, 
+            step=1,
+            help="Type the exact FPS you want for your final video."
+        )
 
     def get_scale_filter(res_choice):
         if "4K" in res_choice:
@@ -79,13 +81,13 @@ if uploaded_file is not None:
         with st.spinner("⏳ Fast Processing with FFmpeg..."):
             final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
             
-            # FFmpeg filters combining enhancement and user-defined FPS
+            # Apply filters based on the selected mode
             if "1. AI Video Repair" in mode_choice:
-                vf_filter = f"hqdn3d=4:3:6:4.5,fps={target_fps}"
+                vf_filter = "hqdn3d=4:3:6:4.5"
             elif "2. Ultra HD Sharpening" in mode_choice:
-                vf_filter = f"unsharp=5:5:1.0:5:5:0.0,fps={target_fps}"
+                vf_filter = "unsharp=5:5:1.0:5:5:0.0"
             elif "3. Game Restoration" in mode_choice:
-                vf_filter = f"hqdn3d=3:2:3:2,eq=contrast=1.2:saturation=1.3,unsharp=3:3:0.8,fps={target_fps}"
+                vf_filter = "hqdn3d=3:2:3:2,eq=contrast=1.2:saturation=1.3,unsharp=3:3:0.8"
             else:
                 vf_filter = f"fps={target_fps}"
 
@@ -102,4 +104,4 @@ if uploaded_file is not None:
 
     if 'processed_video' in st.session_state:
         render_download_section(st.session_state['processed_video'], st.session_state.get('filename', 'video.mp4'))
-            
+        
