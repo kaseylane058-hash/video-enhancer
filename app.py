@@ -18,12 +18,13 @@ if uploaded_file is not None:
     mode_choice = st.radio(
         "Select processing mode:",
         (
+            "✨ 5. AI Ultra HD (Advanced AI Enhancement)",
             "🛠️ 1. AI Video Repair (Noise & Grain Removal)",
             "🔎 2. Ultra HD Sharpening (Enhance Details)",
             "🎮 3. Game Restoration (Wink Style Pro)",
             "⚡ 4. Custom FPS Boost Only"
         ),
-        index=2
+        index=0
     )
 
     # FPS input box will appear ONLY when Mode 4 is selected
@@ -81,15 +82,23 @@ if uploaded_file is not None:
         with st.spinner("⏳ Fast Processing with FFmpeg..."):
             final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
             
-            # Apply filters based on the selected mode
-            if "1. AI Video Repair" in mode_choice:
+            # Apply filters based on the selected mode (Including new AI Ultra HD)
+            if "5. AI Ultra HD" in mode_choice:
+                # High-end AI-like restoration filter combining deep denoise, smart contrast, and cinematic unsharp mask
+                vf_filter = "hqdn3d=3:2:3:2,eq=contrast=1.15:brightness=0.02:saturation=1.2,unsharp=5:5:1.2:5:5:0.4"
+                filename = "ai_ultrahd_video.mp4"
+            elif "1. AI Video Repair" in mode_choice:
                 vf_filter = "hqdn3d=4:3:6:4.5"
+                filename = "repaired_video.mp4"
             elif "2. Ultra HD Sharpening" in mode_choice:
                 vf_filter = "unsharp=5:5:1.0:5:5:0.0"
+                filename = "ultrahd_video.mp4"
             elif "3. Game Restoration" in mode_choice:
                 vf_filter = "hqdn3d=3:2:3:2,eq=contrast=1.2:saturation=1.3,unsharp=3:3:0.8"
+                filename = "game_restored_video.mp4"
             else:
                 vf_filter = f"fps={target_fps}"
+                filename = "smooth_fps_video.mp4"
 
             subprocess.run([
                 'ffmpeg', '-y', '-i', video_path,
@@ -99,7 +108,7 @@ if uploaded_file is not None:
             ])
 
             st.session_state['processed_video'] = final_output
-            st.session_state['filename'] = "enhanced_video.mp4"
+            st.session_state['filename'] = filename
             st.success("🎉 Done in seconds!")
 
     if 'processed_video' in st.session_state:
