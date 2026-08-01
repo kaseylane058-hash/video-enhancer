@@ -27,8 +27,8 @@ if uploaded_file is not None:
         index=0
     )
 
-    # FPS input box will appear ONLY when Mode 4 is selected
-    target_fps = 60  # Default value
+    # Ensuring target_fps is properly captured and maintained
+    target_fps = 60  
     if "4. Custom FPS Boost Only" in mode_choice:
         st.write("---")
         st.subheader("⚙️ Custom FPS Settings")
@@ -69,8 +69,8 @@ if uploaded_file is not None:
                 subprocess.run([
                     'ffmpeg', '-y', '-i', processed_video_path,
                     '-vf', scale_filter,
-                    '-c:v', 'libx264', '-crf', '18', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
-                    '-c:a', 'copy', final_output
+                    '-c:v', 'libx264', '-crf', '18', '-preset', 'medium', '-pix_fmt', 'yuv420p',
+                    '-c:a', 'aac', '-movflags', '+faststart', final_output
                 ])
                 
                 st.success("🎉 Ready!")
@@ -82,7 +82,6 @@ if uploaded_file is not None:
         with st.spinner("⏳ Fast Processing with FFmpeg..."):
             final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
             
-            # Apply filters based on the selected mode (Fixed FPS logic for smooth conversion)
             if "5. AI Ultra HD" in mode_choice:
                 vf_filter = "hqdn3d=3:2:3:2,eq=contrast=1.15:brightness=0.02:saturation=1.2,unsharp=5:5:1.2:5:5:0.4"
                 filename = "ai_ultrahd_video.mp4"
@@ -96,20 +95,20 @@ if uploaded_file is not None:
                 vf_filter = "hqdn3d=3:2:3:2,eq=contrast=1.2:saturation=1.3,unsharp=3:3:0.8"
                 filename = "game_restored_video.mp4"
             else:
-                # Corrected FFmpeg filter for smooth frame-rate conversion without corrupting the video
-                vf_filter = f"fps={target_fps},format=yuv420p"
-                filename = "smooth_fps_video.mp4"
+                # Properly injecting the dynamic target_fps value here
+                vf_filter = f"fps={target_fps}"
+                filename = f"smooth_{target_fps}fps_video.mp4"
 
             subprocess.run([
                 'ffmpeg', '-y', '-i', video_path,
                 '-vf', vf_filter,
-                '-c:v', 'libx264', '-crf', '20', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
-                '-c:a', 'aac', final_output
+                '-c:v', 'libx264', '-crf', '20', '-preset', 'medium', '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac', '-movflags', '+faststart', final_output
             ])
 
             st.session_state['processed_video'] = final_output
             st.session_state['filename'] = filename
-            st.success("🎉 Done in seconds!")
+            st.success("🎉 Done!")
 
     if 'processed_video' in st.session_state:
         render_download_section(st.session_state['processed_video'], st.session_state.get('filename', 'video.mp4'))
