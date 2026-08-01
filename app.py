@@ -9,6 +9,7 @@ st.title("Mjrsweb (FFmpeg Processing Engine)")
 uploaded_file = st.file_uploader("Upload video (MP4, MOV, AVI)", type=["mp4", "mov", "avi"])
 
 if uploaded_file is not None:
+    # Creating a safe permanent temp path for processing
     tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
     tfile.write(uploaded_file.read())
     video_path = tfile.name
@@ -68,10 +69,10 @@ if uploaded_file is not None:
                 cmd = [
                     'ffmpeg', '-y', '-i', processed_video_path,
                     '-vf', scale_filter,
-                    '-c:v', 'libx264', '-crf', '20', '-preset', 'medium', '-pix_fmt', 'yuv420p',
+                    '-c:v', 'libx264', '-crf', '20', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
                     '-c:a', 'aac', '-movflags', '+faststart', final_output
                 ]
-                subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 
                 st.success("🎉 Ready!")
                 st.video(final_output)
@@ -79,7 +80,7 @@ if uploaded_file is not None:
                     st.download_button("⬇️ Download Video", data=file, file_name=default_filename, mime="video/mp4")
 
     if st.button("🚀 Start Instant Processing", type="primary"):
-        with st.spinner("⏳ Processing video. This will take time based on video length..."):
+        with st.spinner("⏳ Processing video. Please wait..."):
             final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
             
             if "5. AI Ultra HD" in mode_choice:
@@ -98,22 +99,38 @@ if uploaded_file is not None:
                 vf_filter = f"fps={target_fps}"
                 filename = f"smooth_{target_fps}fps_video.mp4"
 
+            # Primary robust FFmpeg command
             cmd = [
                 'ffmpeg', '-y', '-i', video_path,
                 '-vf', vf_filter,
-                '-c:v', 'libx264', '-crf', '23', '-preset', 'medium', '-pix_fmt', 'yuv420p',
-                '-c:a', 'aac', '-movflags', '+faststart', final_output
+                '-c:v', 'libx264', '-crf', '22', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', final_output
             ]
             
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
-            if result.returncode == 0 and os.path.exists(final_output) and os.path.getsize(final_output) > 1000:
+            # Safe check if output file is successfully created and not empty
+            if os.path.exists(final_output) and os.path.getsize(final_output) > 5000:
                 st.session_state['processed_video'] = final_output
                 st.session_state['filename'] = filename
                 st.success("🎉 Processing completed successfully!")
             else:
-                st.error("❌ Processing failed. Please check the video format.")
+                # Fallback engine if audio stream causes issue
+                fallback_cmd = [
+                    'ffmpeg', '-y', '-i', video_path,
+                    '-vf', vf_filter,
+                    '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+                    '-an', final_output
+                ]
+                subprocess.run(fallback_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                
+                if os.path.exists(final_output) and os.path.getsize(final_output) > 5000:
+                    st.session_state['processed_video'] = final_output
+                    st.session_state['filename'] = filename
+                    st.success("🎉 Processing completed successfully! (Audio removed for compatibility)")
+                else:
+                    st.error("❌ Processing failed. Please make sure FFmpeg is installed in your environment.")
 
     if 'processed_video' in st.session_state:
         render_download_section(st.session_state['processed_video'], st.session_state.get('filename', 'video.mp4'))
-            
+                
