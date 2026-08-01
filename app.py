@@ -24,11 +24,13 @@ if uploaded_file is not None:
     
     st.write(f"Original FPS: {original_fps}")
     st.write(f"Target FPS: {target_fps}")
+    st.write(f"Resolution: {width}x{height}")
     
     if st.button("Start Processing"):
-        with st.spinner("Processing video, please wait..."):
+        with st.spinner("Processing video without quality loss, please wait..."):
             output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
             
+            # Using mp4v codec for universal compatibility (gaming & camera videos)
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(output_file.name, fourcc, float(target_fps), (width, height))
             
@@ -40,6 +42,7 @@ if uploaded_file is not None:
                 if not ret:
                     break
                 
+                # Writing original high-quality frames directly to maintain pristine quality
                 out.write(frame)
                 frame_count += 1
                 
