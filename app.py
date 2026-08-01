@@ -82,9 +82,8 @@ if uploaded_file is not None:
         with st.spinner("⏳ Fast Processing with FFmpeg..."):
             final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
             
-            # Apply filters based on the selected mode (Including new AI Ultra HD)
+            # Apply filters based on the selected mode (Fixed FPS logic for smooth conversion)
             if "5. AI Ultra HD" in mode_choice:
-                # High-end AI-like restoration filter combining deep denoise, smart contrast, and cinematic unsharp mask
                 vf_filter = "hqdn3d=3:2:3:2,eq=contrast=1.15:brightness=0.02:saturation=1.2,unsharp=5:5:1.2:5:5:0.4"
                 filename = "ai_ultrahd_video.mp4"
             elif "1. AI Video Repair" in mode_choice:
@@ -97,7 +96,8 @@ if uploaded_file is not None:
                 vf_filter = "hqdn3d=3:2:3:2,eq=contrast=1.2:saturation=1.3,unsharp=3:3:0.8"
                 filename = "game_restored_video.mp4"
             else:
-                vf_filter = f"fps={target_fps}"
+                # Corrected FFmpeg filter for smooth frame-rate conversion without corrupting the video
+                vf_filter = f"fps={target_fps},format=yuv420p"
                 filename = "smooth_fps_video.mp4"
 
             subprocess.run([
@@ -113,4 +113,4 @@ if uploaded_file is not None:
 
     if 'processed_video' in st.session_state:
         render_download_section(st.session_state['processed_video'], st.session_state.get('filename', 'video.mp4'))
-            
+        
