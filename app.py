@@ -4,7 +4,7 @@ import subprocess
 import os
 
 st.set_page_config(page_title="Mjrsweb", layout="centered", page_icon="🎬")
-st.title("Mjrsweb (Super Fast FFmpeg Engine)")
+st.title("Mjrsweb (FFmpeg Processing Engine)")
 
 uploaded_file = st.file_uploader("Upload video (MP4, MOV, AVI)", type=["mp4", "mov", "avi"])
 
@@ -61,16 +61,17 @@ if uploaded_file is not None:
         )
 
         if st.button("✨ Generate Final Video", type="primary"):
-            with st.spinner("⏳ Exporting video with proper rendering..."):
+            with st.spinner("⏳ Exporting video. Please wait..."):
                 final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                 scale_filter = get_scale_filter(save_resolution)
 
-                subprocess.run([
+                cmd = [
                     'ffmpeg', '-y', '-i', processed_video_path,
                     '-vf', scale_filter,
-                    '-c:v', 'libx264', '-crf', '18', '-preset', 'fast', '-pix_fmt', 'yuv420p',
+                    '-c:v', 'libx264', '-crf', '20', '-preset', 'medium', '-pix_fmt', 'yuv420p',
                     '-c:a', 'aac', '-movflags', '+faststart', final_output
-                ])
+                ]
+                subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 
                 st.success("🎉 Ready!")
                 st.video(final_output)
@@ -78,8 +79,7 @@ if uploaded_file is not None:
                     st.download_button("⬇️ Download Video", data=file, file_name=default_filename, mime="video/mp4")
 
     if st.button("🚀 Start Instant Processing", type="primary"):
-        # Real processing block that forces FFmpeg to actually render all frames instead of skipping instantly
-        with st.spinner("⏳ Enhancing video frames (Please wait while it processes)..."):
+        with st.spinner("⏳ Processing video. This will take time based on video length..."):
             final_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
             
             if "5. AI Ultra HD" in mode_choice:
@@ -98,18 +98,22 @@ if uploaded_file is not None:
                 vf_filter = f"fps={target_fps}"
                 filename = f"smooth_{target_fps}fps_video.mp4"
 
-            # Strict encoding parameters to ensure the video is fully processed and playable on all devices
-            subprocess.run([
+            cmd = [
                 'ffmpeg', '-y', '-i', video_path,
                 '-vf', vf_filter,
-                '-c:v', 'libx264', '-crf', '20', '-preset', 'fast', '-pix_fmt', 'yuv420p',
+                '-c:v', 'libx264', '-crf', '23', '-preset', 'medium', '-pix_fmt', 'yuv420p',
                 '-c:a', 'aac', '-movflags', '+faststart', final_output
-            ])
-
-            st.session_state['processed_video'] = final_output
-            st.session_state['filename'] = filename
-            st.success("🎉 Processing completed successfully!")
+            ]
+            
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+            if result.returncode == 0 and os.path.exists(final_output) and os.path.getsize(final_output) > 1000:
+                st.session_state['processed_video'] = final_output
+                st.session_state['filename'] = filename
+                st.success("🎉 Processing completed successfully!")
+            else:
+                st.error("❌ Processing failed. Please check the video format.")
 
     if 'processed_video' in st.session_state:
         render_download_section(st.session_state['processed_video'], st.session_state.get('filename', 'video.mp4'))
-        
+            
